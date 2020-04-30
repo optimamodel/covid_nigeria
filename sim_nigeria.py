@@ -192,12 +192,19 @@ def lift_lockdown_paper():
             'name': f'{tn} tests/day, effective face-masks',
             'pars': {
                 'interventions': [
+                    # #old interventions
                     cv.clip_edges(start_day='2020-04-01', end_day='2020-05-04', change={'w': 0.3}), # Reduce work by 70% til May 4
                     cv.test_num(daily_tests=np.array([200]*180) / pop_scale, start_day='2020-04-01', end_day='2020-05-04', **test_kwargs),
                     cv.contact_tracing(start_day='2020-04-01', end_day='2020-05-04',
                                        trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
                                        trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7}),
-                    cv.test_num(daily_tests=np.array([tn]*180) / pop_scale, start_day='2020-05-04', **test_kwargs),
+
+                    # new post-lockdown interventions
+                    cv.screen_test_trace(daily_tests=np.array([tn]*180) / pop_scale,
+                                         daily_screens=np.array([20000]*180) / pop_scale,
+                                         severe_test=100.0,
+                                         screen_test=4.,
+                                         start_day='2020-05-04', **test_kwargs),
                     cv.contact_tracing(start_day='2020-05-04', end_day='2020-09-30',
                                        trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
                                        trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7}),
