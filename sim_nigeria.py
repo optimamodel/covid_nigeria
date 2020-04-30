@@ -178,7 +178,8 @@ def lift_lockdown_paper():
                     cv.contact_tracing(start_day='2020-04-01', end_day='2020-05-04',
                                        trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
                                        trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7}),
-                    cv.test_num(daily_tests=np.array([tn]*180) / pop_scale, start_day='2020-05-04', **test_kwargs),
+
+                    cv.screen_test_trace(daily_tests=np.array([tn]*180) / pop_scale, start_day='2020-05-04', **test_kwargs),
                     cv.contact_tracing(start_day='2020-05-04', end_day='2020-09-30',
                                        trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
                                        trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7})]
@@ -219,3 +220,109 @@ def lift_lockdown_paper():
 df, scens = lift_lockdown_paper()
 #sim = make_sim()
 #sim.plot(do_save=1, do_show=0)
+
+
+
+
+class screen_test_trace(cv.Intervention):
+    '''
+    Implement targeted testing in combination with symptom screening
+    '''
+    def __init__(self, daily_screens, daily_tests, severe_test=100.0, screen_test=4., quar_test=1.0, sensitivity=1.0, loss_prob=0,
+                 test_delay=0, fever_prev=0.02, fever_prev_covid=0.5, prob_quar_after_fever=0.7, start_day=0, end_day=None, do_plot=None):
+        super().__init__(do_plot=do_plot)
+        self.daily_screens = daily_screens  # Should be a list of length matching time
+        self.daily_tests = daily_tests      # Should be a list of length matching time
+        self.severe_test  = severe_test     # Probability of getting tested if you have severe symptoms
+        self.screen_test = screen_test      # Probability of getting tested if you've had a temperature check and have a fever
+        self.quar_test   = quar_test        # Probability of getting tested if you're in quarantine
+
+        self.fever_prev_covid  = fever_prev_covid    # Prevalence of fever in symptomatic COVID patients
+        self.fever_prev  = fever_prev                # Prevalence of fever overall
+        self.screen_trace_probs = screen_trace_probs # Probability you'll call your contacts and tell them you have a fever (but not a confirmed diagnosis)
+        self.screen_trace_time = screen_trace_time   # Time it'll take you to get round to making those calls
+        self.prob_quar_after_fever = prob_quar_after_fever # Probability that you'll quarantine after you've had your temp checked and have a fever (but not a confirmed diagnosis)
+
+        self.sensitivity = sensitivity      # Sensitivity of the PCR test
+        self.loss_prob   = loss_prob        # Probability of LTFU
+        self.test_delay  = test_delay       # Delay in getting test results
+
+        self.start_day   = start_day
+        self.end_day     = end_day
+        self._store_args()
+
+        return
+
+    def initialize(self, sim):
+        ''' Fix the dates '''
+        self.start_day = sim.day(self.start_day)
+        self.end_day   = sim.day(self.end_day)
+        self.days      = [self.start_day, self.end_day]
+        return
+
+    def apply(self, sim):
+        t = sim.t
+        if t < self.start_day:
+            return
+        elif self.end_day is not None and t > self.end_day:
+            return
+
+        # Process daily tests -- has to be here rather than init so have access to the sim object
+        if isinstance(self.daily_tests, (pd.Series, pd.DataFrame)):
+            start_date = sim['start_day'] + dt.timedelta(days=self.start_day)
+            end_date = self.daily_tests.index[-1]
+            dateindex = pd.date_range(start_date, end_date)
+            self.daily_tests = self.daily_tests.reindex(dateindex, fill_value=0).to_numpy()
+
+        # Check that there are still tests
+        rel_t = t - self.start_day
+        if rel_t < len(self.daily_tests):
+            n_tests = self.daily_tests[rel_t]  # Number of tests for this day
+            if not (n_tests and pl.isfinite(n_tests)): # If there are no tests today, abort early
+                return
+            else:
+                sim.results['new_tests'][t] += n_tests
+        else:
+            return
+
+        # Set the prevalence of fever in the population. Assume that some proportion of people with COVID symptoms have fever
+        # and that some proportion of the rest of the population will record temperatures above 37.5
+        has_fever   = np.full(sim.n, False, dtype=bool)
+
+        symptomatic_covid_inds  = cvu.true(sim.people.symptomatic)
+        symptomatic_covid_with_fever = cvu.n_binomial(self.fever_prev_covid, len(symptomatic_covid_inds))
+        symptomatic_covid_with_fever_inds = symptomatic_covid_inds[symptomatic_covid_with_fever]
+
+        extra_fever = cvu.choose(self.fever_prev*n, sim.n) # Prevalence of fever generally, not necessarily connected to COVID
+        has_fever[symptomatic_covid_with_fever_inds] = True
+        has_fever[extra_fever] = True
+
+        # Screen people and figure out who screens positive
+        screened = np.full(sim.n, False, dtype=bool) # No-one has been screened this timestep
+        screen_inds = cvu.choose(daily_screens[t], sim.n) # Who will we screen today - untargeted
+        screened[screen_inds] = True
+        screened_pos_inds  = cvu.true(screened_people & has_fever)
+
+        # Do some light quarantine and contact tracing for those who've screened positive
+        will_quarantine = cvu.binomial_filter(self.prob_quar_after_fever, arr)
+        sim.people.quarantine(will_quarantine)
+        sim.people.trace(screened_pos_inds, self.screen_trace_probs, self.screen_trace_time)
+
+        test_probs = np.zeros(sim.n) # Begin by assigning zero testing probability to everyone
+
+        severe_inds  = cvu.true(sim.people.severe)
+        quar_inds    = cvu.true(sim.people.quarantined)
+        diag_inds    = cvu.true(sim.people.diagnosed)
+
+        test_probs[screened_pos_inds]  = self.screen_test # Probability of being tested if you were screened (i.e., got your temp checked and had fever)
+        test_probs[severe_inds] = self.severe_test
+        test_probs[quar_inds]   = self.quar_test
+        test_probs[diag_inds]   = 0.
+
+        test_inds = cvu.choose_w(probs=test_probs, n=n_tests, unique=False)
+
+        sim.people.test(test_inds, self.sensitivity, loss_prob=self.loss_prob, test_delay=self.test_delay) # This sets their diagnosed date
+
+
+        return
+
