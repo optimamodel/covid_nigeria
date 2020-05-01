@@ -13,6 +13,13 @@ pars = dict(
     pop_type = 'hybrid',
     )
 
+# Works
+pars = dict(pop_size=200e3,
+             n_days=60,
+             rand_seed=1,
+             pop_type = 'hybrid',
+             )
+
 to_plot = cv.get_sim_plots()
 to_plot['Diagnoses'] = ['cum_diagnoses']
 to_plot['Deaths'] =  ['cum_deaths']
