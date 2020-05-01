@@ -1,14 +1,17 @@
 import covasim as cv
 
 pars = dict(
-    pop_size = 500e3,
-    pop_scale = 0.5,
+    pop_size = 300e3,
+    pop_scale = 1.0,
     start_day = '2020-02-25',
-    pop_infected = 50,
-    interventions = cv.test_prob(symp_prob=0.01, asymp_prob=0),
+    pop_infected = 25,
+    interventions = [
+        cv.test_prob(symp_prob=0.01, asymp_prob=0),
+        cv.change_beta(days='2020-03-29', changes=0.6, layers=['s','w','c']),
+        ],
     n_days = 65,
     rand_seed = 2,
-    # beta = 0.012,s
+    # beta = 0.012,
     location = 'nigeria',
     pop_type = 'hybrid',
     )
