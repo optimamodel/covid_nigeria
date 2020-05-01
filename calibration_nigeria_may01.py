@@ -2,13 +2,13 @@ import covasim as cv
 
 # Calibration parameters
 
-which = ['default', 'calibrated'][0]
+which = ['default', 'calibrated'][1]
 
 if which == 'default':
     symp_prob = 0.0015
     beta_change = 1.0
     beta = 0.015
-    pop_infected = 10
+    pop_infected = 20
 elif which == 'calibrated':
     symp_prob = 0.005
     beta_change = 0.5
@@ -19,7 +19,7 @@ elif which == 'calibrated':
 pars = dict(
     pop_size = 500e3,
     pop_scale = 2.0,
-    start_day = '2020-02-25',
+    start_day = '2020-03-01',
     pop_infected = pop_infected,
     interventions = [
         cv.test_prob(symp_prob=symp_prob, asymp_prob=0, do_plot=False),
