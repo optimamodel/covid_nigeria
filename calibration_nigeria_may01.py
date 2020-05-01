@@ -1,7 +1,7 @@
 import covasim as cv
 
 pars = dict(
-    pop_size = 200e3,
+    pop_size = 20e3,
     pop_scale = 5,
     start_day = '2020-02-15',
     pop_infected = 5,
