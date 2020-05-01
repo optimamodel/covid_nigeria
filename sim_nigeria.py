@@ -63,13 +63,13 @@ def make_sim():
 metapars = {'n_runs': 1}
 to_plot = [
     'cum_infections',
-#    'new_infections',
+    'new_infections',
     'cum_symptomatic',
     'cum_severe',
     'cum_critical',
     'cum_deaths',
-#    'new_diagnoses',
-    'new_quarantined',
+#    'cum_diagnoses',
+#    'cum_quarantined',
 ]
 fig_args = dict(figsize=(28, 20))
 
@@ -101,7 +101,7 @@ class quarantine_severe(cv.Intervention):
         sim.people.quarantine(severe_inds)
         sim.results['new_quarantined'][t] += len(severe_inds)
 
-        print(f'{severe_inds} put into quarantine due to severe symptoms.')
+#        print(f'{severe_inds} put into quarantine due to severe symptoms.')
 
         return
 
@@ -119,6 +119,7 @@ class screen(cv.Intervention):
         self.start_day   = start_day
         self.end_day     = end_day
         self._store_args()
+        self.screen_quarantined = 0
 
         return
 
@@ -136,10 +137,13 @@ class screen(cv.Intervention):
         elif self.end_day is not None and t > self.end_day:
             return
 
-        screen_inds = cvu.choose(sim.n, self.daily_screens[t]) # Who will we screen today - untargeted
+        adults = sim.people.age > 18
+        adults_inds = sc.findinds(adults)
+        screen_inds = cvu.choose(len(adults_inds), self.daily_screens[t]) # Who will we screen today - untargeted
         screen_inds = np.unique(screen_inds)
 
-        is_symptomatic = cvu.itruei(sim.people.symptomatic, screen_inds)
+        screened_adult_inds = adults_inds[screen_inds]
+        is_symptomatic = cvu.itruei(sim.people.symptomatic, screened_adult_inds)
         pos_screen     = cvu.n_binomial(self.sensitivity, len(is_symptomatic))
         is_sym_pos     = is_symptomatic[pos_screen]
 
@@ -214,7 +218,177 @@ def lift_lockdown_paper():
 
     return df, scens
 
-df, scens = lift_lockdown_paper()
+
+
+def lift_lockdown_paper_screening():
+
+    pop_scale = 1000
+    test_kwargs = {'sympt_test': 0.0, 'quar_test': 100.0, 'sensitivity': 1.0, 'test_delay': 0, 'loss_prob': 0}
+    tn = 2000
+
+    pre_lockdown_interventions = [cv.clip_edges(start_day='2020-04-01', end_day='2020-05-04', change={'w': 0.3}), # Reduce work by 70% til May 4
+                                  cv.test_num(daily_tests=np.array([200]*180) / pop_scale, start_day='2020-04-01', end_day='2020-05-04', **test_kwargs),
+                                  cv.contact_tracing(start_day='2020-04-01', end_day='2020-05-04',
+                                                     trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
+                                                     trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7})]
+
+    scenarios = {
+        f'notarget_ineff': {
+            'name': f'No symptom screening; ineffective face-masks',
+            'pars': {
+                'interventions': pre_lockdown_interventions + [
+                    # new post-lockdown interventions
+                    quarantine_severe(start_day='2020-05-04'),
+                    cv.test_num(daily_tests=np.array([tn] * 180) / pop_scale, start_day='2020-05-04',
+                                end_day='2020-09-30', **test_kwargs),
+                    cv.contact_tracing(start_day='2020-05-04', end_day='2020-09-30',
+                                       trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
+                                       trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7})]
+            }
+        },
+        f'notarget_eff': {
+            'name': f'No symptom screening; effective face-masks',
+            'pars': {
+                'interventions': pre_lockdown_interventions + [
+                    # new post-lockdown interventions
+                    quarantine_severe(start_day='2020-05-04'),
+                    cv.test_num(daily_tests=np.array([tn] * 180) / pop_scale, start_day='2020-05-04',
+                                end_day='2020-09-30', **test_kwargs),
+                    cv.contact_tracing(start_day='2020-05-04', end_day='2020-09-30',
+                                       trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
+                                       trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7}),
+                    cv.change_beta([35, 182], [0.95, 1], layers='w'),  # Reduce beta by by 10% for face masks
+                    cv.change_beta([35, 182], [0.95, 1], layers='c')]  # Reduce beta by by 10% for face masks
+            }
+        },
+        f'target_ineff': {
+            'name': f'Symptom screening; ineffective face-masks',
+            'pars': {
+                'interventions': pre_lockdown_interventions + [
+                    # new post-lockdown interventions
+                    screen(daily_screens=np.array([5e6]*180) / pop_scale,
+                           start_day='2020-05-04'),
+                    quarantine_severe(start_day='2020-05-04'),
+                    cv.test_num(daily_tests=np.array([tn] * 180) / pop_scale, start_day='2020-05-04',
+                                end_day='2020-09-30', **test_kwargs),
+                    cv.contact_tracing(start_day='2020-05-04', end_day='2020-09-30',
+                                       trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
+                                       trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7})]
+            }
+        },
+        f'target_eff': {
+            'name': f'Symptom screening; effective face-masks',
+            'pars': {
+                'interventions': pre_lockdown_interventions + [
+                    # new post-lockdown interventions
+                    screen(daily_screens=np.array([5e6] * 180) / pop_scale,
+                           start_day='2020-05-04'),
+                    quarantine_severe(start_day='2020-05-04'),
+                    cv.test_num(daily_tests=np.array([tn] * 180) / pop_scale, start_day='2020-05-04',
+                                end_day='2020-09-30', **test_kwargs),
+                    cv.contact_tracing(start_day='2020-05-04', end_day='2020-09-30',
+                                       trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
+                                       trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7}),
+                    cv.change_beta([35, 182], [0.95, 1], layers='w'),  # Reduce beta by by 10% for face masks
+                    cv.change_beta([35, 182], [0.95, 1], layers='c')]  # Reduce beta by by 10% for face masks
+    }
+        },
+    }
+
+    sim = make_sim()
+    scens = cv.Scenarios(sim=sim, scenarios=scenarios, metapars=metapars)
+    df = scens.run(verbose=verbose, debug=False)
+    scens.plot(do_save=1, do_show=0, to_plot=to_plot, fig_path=f'results/nigeria_scenarios_paper', n_cols=2, fig_args=fig_args)
+
+    return df, scens
+
+
+
+def lift_lockdown_paper_screening_beta():
+
+    pop_scale = 1000
+    test_kwargs = {'sympt_test': 0.0, 'quar_test': 100.0, 'sensitivity': 1.0, 'test_delay': 0, 'loss_prob': 0}
+    tn = 2000
+
+    pre_lockdown_interventions = [cv.clip_edges(start_day='2020-04-01', end_day='2020-05-04', change={'w': 0.3}), # Reduce work by 70% til May 4
+                                  cv.test_num(daily_tests=np.array([200]*180) / pop_scale, start_day='2020-04-01', end_day='2020-05-04', **test_kwargs),
+                                  cv.contact_tracing(start_day='2020-04-01', end_day='2020-05-04',
+                                                     trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
+                                                     trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7})]
+
+    scenarios = {
+        f'notarget_ineff': {
+            'name': f'No symptom screening; ineffective face-masks',
+            'pars': {
+                'interventions': pre_lockdown_interventions + [
+                    # new post-lockdown interventions
+                    quarantine_severe(start_day='2020-05-04'),
+                    cv.test_num(daily_tests=np.array([tn] * 180) / pop_scale, start_day='2020-05-04',
+                                end_day='2020-09-30', **test_kwargs),
+                    cv.contact_tracing(start_day='2020-05-04', end_day='2020-09-30',
+                                       trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
+                                       trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7})]
+            }
+        },
+        f'notarget_eff': {
+            'name': f'No symptom screening; effective face-masks',
+            'pars': {
+                'interventions': pre_lockdown_interventions + [
+                    # new post-lockdown interventions
+                    quarantine_severe(start_day='2020-05-04'),
+                    cv.test_num(daily_tests=np.array([tn] * 180) / pop_scale, start_day='2020-05-04',
+                                end_day='2020-09-30', **test_kwargs),
+                    cv.contact_tracing(start_day='2020-05-04', end_day='2020-09-30',
+                                       trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
+                                       trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7}),
+                    cv.change_beta([35, 182], [0.95, 1], layers='w'),  # Reduce beta by by 10% for face masks
+                    cv.change_beta([35, 182], [0.95, 1], layers='c')]  # Reduce beta by by 10% for face masks
+            }
+        },
+        f'target_ineff': {
+            'name': f'Symptom screening; ineffective face-masks',
+            'pars': {
+                'interventions': pre_lockdown_interventions + [
+                    # new post-lockdown interventions
+                    screen(daily_screens=np.array([5e6]*180) / pop_scale,
+                           start_day='2020-05-04'),
+                    quarantine_severe(start_day='2020-05-04'),
+                    cv.test_num(daily_tests=np.array([tn] * 180) / pop_scale, start_day='2020-05-04',
+                                end_day='2020-09-30', **test_kwargs),
+                    cv.contact_tracing(start_day='2020-05-04', end_day='2020-09-30',
+                                       trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
+                                       trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7})]
+            }
+        },
+        f'target_eff': {
+            'name': f'Symptom screening; effective face-masks',
+            'pars': {
+                'interventions': pre_lockdown_interventions + [
+                    # new post-lockdown interventions
+                    screen(daily_screens=np.array([5e6] * 180) / pop_scale,
+                           start_day='2020-05-04'),
+                    quarantine_severe(start_day='2020-05-04'),
+                    cv.test_num(daily_tests=np.array([tn] * 180) / pop_scale, start_day='2020-05-04',
+                                end_day='2020-09-30', **test_kwargs),
+                    cv.contact_tracing(start_day='2020-05-04', end_day='2020-09-30',
+                                       trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
+                                       trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7}),
+                    cv.change_beta([35, 182], [0.95, 1], layers='w'),  # Reduce beta by by 10% for face masks
+                    cv.change_beta([35, 182], [0.95, 1], layers='c')]  # Reduce beta by by 10% for face masks
+    }
+        },
+    }
+
+    sim = make_sim()
+    scens = cv.Scenarios(sim=sim, scenarios=scenarios, metapars=metapars)
+    df = scens.run(verbose=verbose, debug=False)
+    scens.plot(do_save=1, do_show=0, to_plot=to_plot, fig_path=f'results/nigeria_scenarios_paper', n_cols=2, fig_args=fig_args)
+
+    return df, scens
+
+
+
+df, scens = lift_lockdown_paper_screening()
 
 
 ## Try running a sim with screening
