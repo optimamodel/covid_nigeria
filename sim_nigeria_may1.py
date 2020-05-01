@@ -190,7 +190,7 @@ def lift_lockdown_paper_screening_beta():
 
     betascens = {'low':0.01, 'medium': 0.015, 'high': 0.018}
 
-    for name, beta in betascens.items:
+    for name, beta in betascens.items():
         sim = make_sim(beta=beta)
         scens = cv.Scenarios(sim=sim, scenarios=scenarios, metapars=metapars)
         df = scens.run(verbose=verbose, debug=False)
