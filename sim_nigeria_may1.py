@@ -186,16 +186,21 @@ def lift_lockdown_paper_screening_beta():
     ]
     fig_args = dict(figsize=(28, 20))
 
+    allres = {}
 
-    for beta in [0.01, 0.015, 0.018]:
+    betascens = {'low':0.01, 'medium': 0.015, 'high': 0.018}
+
+    for name, beta in betascens.items:
         sim = make_sim(beta=beta)
         scens = cv.Scenarios(sim=sim, scenarios=scenarios, metapars=metapars)
         df = scens.run(verbose=verbose, debug=False)
         scens.plot(do_save=1, do_show=0, to_plot=to_plot, fig_path=f'results/nigeria_scenarios_paper', n_cols=2, fig_args=fig_args)
 
-
-    return df, scens
-
+        allres[name] = scens.results
 
 
-df, scens = lift_lockdown_paper_screening_beta()
+    return allres, scens
+
+
+
+allres, scens = lift_lockdown_paper_screening_beta()
