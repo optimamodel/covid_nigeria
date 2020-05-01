@@ -1,8 +1,8 @@
 import covasim as cv
 
 pars = dict(
-    pop_size = 20e3,
-    pop_scale = 5,
+    pop_size = 200e3,
+    pop_scale = 1,
     start_day = '2020-02-15',
     pop_infected = 5,
     interventions = cv.test_prob(symp_prob=0.01, asymp_prob=0),
