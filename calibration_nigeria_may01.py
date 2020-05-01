@@ -1,22 +1,32 @@
 import covasim as cv
 
 # Calibration parameters
-symp_prob = 0.005
-beta_change = 1.0# 0.5
-beta = 0.015 # 0.010
+
+which = ['default', 'calibrated'][1]
+
+if which == 'default':
+    symp_prob = 0.005
+    beta_change = 1.0
+    beta = 0.015
+    pop_infected = 10
+elif which == 'calibrated':
+    symp_prob = 0.005
+    beta_change = 0.5
+    beta = 0.010
+    pop_infected = 120
 
 # Other parameters
 pars = dict(
     pop_size = 250e3,
     pop_scale = 2.0,
     start_day = '2020-02-25',
-    pop_infected = 10, # 120,
+    pop_infected = pop_infected,
     interventions = [
         cv.test_prob(symp_prob=symp_prob, asymp_prob=0, do_plot=False),
         cv.change_beta(days='2020-03-29', changes=beta_change, layers=['s','w','c']),
         ],
     n_days = 65,
-    rand_seed = 2048,
+    rand_seed = 928,
     beta = beta,
     location = 'nigeria',
     pop_type = 'hybrid',
