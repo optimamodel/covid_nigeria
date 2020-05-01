@@ -1,19 +1,19 @@
 import covasim as cv
 
 pars = dict(
-    pop_size = 50e3,
-    pop_scale = 1,
-    start_day = '2020-02-15',
-    # pop_infected = 5,
-    # interventions = cv.test_prob(symp_prob=0.01, asymp_prob=0),
-    n_days = 75,
-    # rand_seed = 2,
-    # beta = 0.012,
-    # location = 'nigeria',
-    # pop_type = 'hybrid',
+    pop_size = 500e3,
+    pop_scale = 0.5,
+    start_day = '2020-02-25',
+    pop_infected = 50,
+    interventions = cv.test_prob(symp_prob=0.01, asymp_prob=0),
+    n_days = 65,
+    rand_seed = 2,
+    # beta = 0.012,s
+    location = 'nigeria',
+    pop_type = 'hybrid',
     )
 
-# Works
+# Simple
 # pars = dict(pop_size=200e3,
 #             start_day = '2020-02-15',
 #             pop_scale = 1,
