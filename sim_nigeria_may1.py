@@ -18,12 +18,12 @@ def make_sim(beta=None):
 
     if beta is None: beta = 0.015
      # Define parameters
-    pars = {'pop_size': 20e3,
+    pars = {'pop_size': 200e3,
             'pop_type': 'hybrid',
             'location': 'nigeria', # Load age structure and household sizes
             'start_day':'2020-04-01',
-            'n_days': 92,
-            'pop_scale': 1000,
+            'n_days': 62,
+            'pop_scale': 100,
             'pop_infected': 10,
             'beta': beta,
             'rand_seed': 1,
@@ -132,7 +132,7 @@ class screen(cv.Intervention):
 
 def lift_lockdown_paper_screening_beta():
 
-    pop_scale = 1000
+    pop_scale = 100
     test_kwargs = {'sympt_test': 0.0, 'quar_test': 100.0, 'sensitivity': 1.0, 'test_delay': 0, 'loss_prob': 0}
     tn = 2000
 
@@ -157,7 +157,7 @@ def lift_lockdown_paper_screening_beta():
             }
         },
        f'screen': {
-            'name': f'Symptom screening; ineffective face-masks',
+            'name': f'Symptom screening',
             'pars': {
                 'interventions': pre_lockdown_interventions + [
                     # new post-lockdown interventions
@@ -188,13 +188,13 @@ def lift_lockdown_paper_screening_beta():
 
     allres = {}
 
-    betascens = {'low':0.01, 'medium': 0.015, 'high': 0.018}
+    betascens = {'low':0.014, 'medium': 0.015, 'high': 0.016}
 
     for name, beta in betascens.items():
         sim = make_sim(beta=beta)
         scens = cv.Scenarios(sim=sim, scenarios=scenarios, metapars=metapars)
         df = scens.run(verbose=verbose, debug=False)
-        scens.plot(do_save=1, do_show=0, to_plot=to_plot, fig_path=f'results/nigeria_scenarios_paper', n_cols=2, fig_args=fig_args)
+        scens.plot(do_save=1, do_show=0, to_plot=to_plot, fig_path=f'results/nigeria_scenarios_paper_{name}', n_cols=2, fig_args=fig_args)
 
         allres[name] = scens.results
 
