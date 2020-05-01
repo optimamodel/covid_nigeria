@@ -186,21 +186,20 @@ def lift_lockdown_paper_screening_beta():
     ]
     fig_args = dict(figsize=(28, 20))
 
-    allres = {}
+    difference = {k:np.zeros((63,10)) for k in to_plot}
+    beta_vals = np.random.normal(0.015, 0.001, 10)
 
-    betascens = {'low':0.014, 'medium': 0.015, 'high': 0.016}
-
-    for name, beta in betascens.items():
+    for bi,beta in enumerate(beta_vals):
         sim = make_sim(beta=beta)
         scens = cv.Scenarios(sim=sim, scenarios=scenarios, metapars=metapars)
         df = scens.run(verbose=verbose, debug=False)
-        scens.plot(do_save=1, do_show=0, to_plot=to_plot, fig_path=f'results/nigeria_scenarios_paper_{name}', n_cols=2, fig_args=fig_args)
+        #scens.plot(do_save=1, do_show=0, to_plot=to_plot, fig_path=f'results/nigeria_scenarios_paper_{name}', n_cols=2, fig_args=fig_args)
 
-        allres[name] = scens.results
+        for rk in to_plot:
+            difference[rk][:,bi] = scens.results[rk]['noscreen']['best'] - scens.results[rk]['screen']['best']
+
+    return difference, scens
 
 
-    return allres, scens
 
-
-
-allres, scens = lift_lockdown_paper_screening_beta()
+difference, scens = lift_lockdown_paper_screening_beta()
