@@ -21,10 +21,12 @@ if which == 'default':
     beta = 0.015
     pop_infected = 20
 elif which == 'calibrated':
-    symp_prob = 0.005
+    symp_prob = 0.004
     beta_change = 0.4
-    beta = 0.014
-    pop_infected = 50
+    beta = 0.013
+    pop_infected = 80
+    rel_crit_prob = 5.0,
+    diag_factor = 0.8,
 
 # Other parameters
 pars = dict(
@@ -38,7 +40,7 @@ pars = dict(
         cv.test_prob(symp_prob=symp_prob, asymp_prob=0, start_day=0, do_plot=False),
         cv.change_beta(days=['2020-03-29','2020-05-05'], changes=[beta_change, 0.95], layers=['s','w','c'], do_plot=beta_change<1.0),
         ],
-    rand_seed = 3,
+    rand_seed = 999275,#1,#, 20,
     beta = beta,
     location = 'nigeria',
     pop_type = 'hybrid',
