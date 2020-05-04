@@ -74,12 +74,12 @@ sim = msim.base_sim
 to_plot = sc.objdict({
     'Diagnoses': ['cum_diagnoses'],
     'Deaths': ['cum_deaths'],
-    'Infections and number infectious': ['cum_infections', 'n_infectious'],
+    'Total infections': ['cum_infections'],
     'New infections per day': ['new_infections'],
     })
 sim.plot(to_plot=to_plot, do_save=False, do_show=True, legend_args={'loc': 'upper left'}, axis_args={'hspace':0.4})
 
 if do_save:
     pl.savefig('nigeria_calibration_may03.png', dpi=150)
-    sim.save('nigeria.sim')
+    sim.save('nigeria_may03.sim')
 
