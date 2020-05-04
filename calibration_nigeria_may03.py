@@ -15,25 +15,31 @@ cv.check_version('0.30.3')
 cv.git_info('covasim_version.json')
 
 # Calibration parameters -- "default" uses default sim values, "calibrated" uses Nigeria-specific ones
+
+rel_crit_prob = 5.0
+diag_factor = 0.8
 which = ['default', 'calibrated'][1]
 if which == 'default':
+    pop_size = 400e3
+    pop_scale = 10.0
+    pop_infected = 20
     symp_prob = 0.0015
     beta_change = 1.0
     beta = 0.015
-    pop_infected = 20
 elif which == 'calibrated':
+    pop_size = 400e3
+    pop_scale = 10.0
+    pop_infected = 200
+    rescale = True
     symp_prob = 0.004
     beta_change = 0.5
-    beta = 0.010
-    pop_infected = 100
-    rel_crit_prob = 5.0,
-    diag_factor = 0.8,
+    beta = 0.013
 
 # Other parameters
 pars = dict(
-    pop_size = 200e3,
-    pop_scale = 5.0,
-    rescale = False,
+    pop_size = pop_size,
+    pop_scale = pop_scale,
+    rescale = rescale,
     start_day = '2020-03-01',
     end_day = '2020-05-04',
     pop_infected = pop_infected,
@@ -45,6 +51,7 @@ pars = dict(
     beta = beta,
     location = 'nigeria',
     pop_type = 'hybrid',
+
     )
 
 # Create sim and run
@@ -56,7 +63,7 @@ for col in ['new_diagnoses', 'cum_diagnoses', 'new_deaths', 'cum_deaths']:
     sim.data.loc[:, col] = factor*sim.data.loc[:, col]
 
 msim = cv.MultiSim(base_sim=sim)
-msim.run(n_runs=6)
+msim.run(n_runs=8)
 msim.reduce()
 sim = msim.base_sim
 
@@ -66,9 +73,9 @@ sim = msim.base_sim
 to_plot = sc.objdict({
     'Diagnoses': ['cum_diagnoses'],
     'Deaths': ['cum_deaths'],
-    'Total infections': ['cum_infections', 'n_infectious'],
-    'Current infections': ['new_infections'],
+    'Infections and number infectious': ['cum_infections', 'n_infectious'],
+    'New infections per day': ['new_infections'],
     })
-sim.plot(to_plot=to_plot, do_save=False, do_show=True)
+sim.plot(to_plot=to_plot, do_save=False, do_show=True, legend_args={'loc': 'upper left'})
 sim.save('nigeria.sim')
 
