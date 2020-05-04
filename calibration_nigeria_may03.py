@@ -34,8 +34,8 @@ elif which == 'calibrated':
     pop_scale = 5.0
     pop_infected = 40
     symp_prob = 0.004
-    beta_change = 0.4
-    beta = 0.013
+    beta_change = 0.5
+    beta = 0.0125
 
 # Other parameters
 pars = dict(
@@ -64,7 +64,7 @@ for col in ['new_diagnoses', 'cum_diagnoses', 'new_deaths', 'cum_deaths']:
     sim.data.loc[:, col] = factor*sim.data.loc[:, col]
 
 msim = cv.MultiSim(base_sim=sim)
-msim.run(n_runs=6, noise=0.05)
+msim.run(n_runs=6, noise=0.1)
 msim.reduce()
 sim = msim.base_sim
 
