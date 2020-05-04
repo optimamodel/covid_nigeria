@@ -26,7 +26,7 @@ pop_scale = 5.0
 pop_infected = 40
 symp_prob = 0.004
 beta = 0.0125
-which = ['lockdown', 'nolockdown'][1]
+which = ['lockdown', 'nolockdown'][0]
 if which == 'lockdown':
     beta_change = 0.5
 elif which == 'nolockdown':
