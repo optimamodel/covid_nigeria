@@ -30,11 +30,11 @@ if which == 'default':
     beta_change = 1.0
     beta = 0.015
 elif which == 'calibrated':
-    pop_size = 400e3
-    pop_scale = 10.0
-    pop_infected = 20
+    pop_size = 200e3
+    pop_scale = 5.0
+    pop_infected = 40
     symp_prob = 0.004
-    beta_change = 0.5
+    beta_change = 0.4
     beta = 0.013
 
 # Other parameters
@@ -64,7 +64,7 @@ for col in ['new_diagnoses', 'cum_diagnoses', 'new_deaths', 'cum_deaths']:
     sim.data.loc[:, col] = factor*sim.data.loc[:, col]
 
 msim = cv.MultiSim(base_sim=sim)
-msim.run(n_runs=8)
+msim.run(n_runs=6, noise=0.05)
 msim.reduce()
 sim = msim.base_sim
 
