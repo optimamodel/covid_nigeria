@@ -8,6 +8,7 @@ https://opendata.ecdc.europa.eu/covid19/casedistribution/csv
 on 2020-05-03 using the Covasim data scraper.
 '''
 
+import sciris as sc
 import covasim as cv
 
 cv.check_version('0.30.3')
@@ -22,25 +23,25 @@ if which == 'default':
     pop_infected = 20
 elif which == 'calibrated':
     symp_prob = 0.004
-    beta_change = 0.4
-    beta = 0.013
-    pop_infected = 80
+    beta_change = 0.5
+    beta = 0.010
+    pop_infected = 100
     rel_crit_prob = 5.0,
     diag_factor = 0.8,
 
 # Other parameters
 pars = dict(
-    pop_size = 500e3,
-    pop_scale = 2.0,
+    pop_size = 200e3,
+    pop_scale = 5.0,
     rescale = False,
     start_day = '2020-03-01',
     end_day = '2020-05-04',
     pop_infected = pop_infected,
     interventions = [
         cv.test_prob(symp_prob=symp_prob, asymp_prob=0, start_day=0, do_plot=False),
-        cv.change_beta(days=['2020-03-29','2020-05-05'], changes=[beta_change, 0.95], layers=['s','w','c'], do_plot=beta_change<1.0),
+        cv.change_beta(days=['2020-03-29'], changes=[beta_change], layers=['s','w','c'], do_plot=beta_change<1.0),
         ],
-    rand_seed = 999275,#1,#, 20,
+    rand_seed = 1,
     beta = beta,
     location = 'nigeria',
     pop_type = 'hybrid',
@@ -53,13 +54,21 @@ for col in ['new_diagnoses', 'cum_diagnoses', 'new_deaths', 'cum_deaths']:
     lagos_deaths = 21
     factor = lagos_deaths/total_deaths # Adjust for Lagos vs. Nigeria, from https://covid19.ncdc.gov.ng/
     sim.data.loc[:, col] = factor*sim.data.loc[:, col]
-sim.run()
+
+msim = cv.MultiSim(base_sim=sim)
+msim.run(n_runs=6)
+msim.reduce()
+sim = msim.base_sim
+
+# sim.run()
 
 # Plotting
-to_plot = cv.get_sim_plots()
-to_plot['Diagnoses'] = ['cum_diagnoses']
-to_plot['Deaths'] =  ['cum_deaths']
-to_plot.remove('Health outcomes')
+to_plot = sc.objdict({
+    'Diagnoses': ['cum_diagnoses'],
+    'Deaths': ['cum_deaths'],
+    'Total infections': ['cum_infections', 'n_infectious'],
+    'Current infections': ['new_infections'],
+    })
 sim.plot(to_plot=to_plot, do_save=False, do_show=True)
 sim.save('nigeria.sim')
 
