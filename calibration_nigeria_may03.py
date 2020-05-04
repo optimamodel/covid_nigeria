@@ -28,9 +28,15 @@ symp_prob = 0.004
 beta = 0.0125
 which = ['lockdown', 'nolockdown'][0]
 if which == 'lockdown':
-    beta_change = 0.5
+    h_beta_change = 1.2 # or 1.0
+    s_beta_change = 0.2 # or 0.5
+    w_beta_change = 0.5 # or 0.5
+    c_beta_change = 0.8 # or 0.5
 elif which == 'nolockdown':
-    beta_change = 1.0
+    h_beta_change = 1.0
+    s_beta_change = 1.0
+    w_beta_change = 1.0
+    c_beta_change = 1.0
 
 
 # Other parameters
@@ -43,7 +49,10 @@ pars = dict(
     pop_infected = pop_infected,
     interventions = [
         cv.test_prob(symp_prob=symp_prob, asymp_prob=0, start_day=0, do_plot=False),
-        cv.change_beta(days=['2020-03-29'], changes=[beta_change], layers=['s','w','c'], do_plot=beta_change<1.0),
+        cv.change_beta(days=['2020-03-29'], changes=[h_beta_change], layers=['h'], do_plot=h_beta_change<1.0),
+        cv.change_beta(days=['2020-03-29'], changes=[s_beta_change], layers=['s'], do_plot=s_beta_change<1.0),
+        cv.change_beta(days=['2020-03-29'], changes=[w_beta_change], layers=['w'], do_plot=w_beta_change<1.0),
+        cv.change_beta(days=['2020-03-29'], changes=[c_beta_change], layers=['c'], do_plot=c_beta_change<1.0),
         ],
     rand_seed = 1,
     beta = beta,
