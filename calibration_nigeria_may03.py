@@ -9,10 +9,13 @@ on 2020-05-03 using the Covasim data scraper.
 '''
 
 import sciris as sc
+import pylab as pl
 import covasim as cv
 
 cv.check_version('0.30.3')
 cv.git_info('covasim_version.json')
+
+do_save = True
 
 # Calibration parameters -- "default" uses default sim values, "calibrated" uses Nigeria-specific ones
 
@@ -29,8 +32,7 @@ if which == 'default':
 elif which == 'calibrated':
     pop_size = 400e3
     pop_scale = 10.0
-    pop_infected = 200
-    rescale = True
+    pop_infected = 20
     symp_prob = 0.004
     beta_change = 0.5
     beta = 0.013
@@ -39,7 +41,7 @@ elif which == 'calibrated':
 pars = dict(
     pop_size = pop_size,
     pop_scale = pop_scale,
-    rescale = rescale,
+    rescale = False,
     start_day = '2020-03-01',
     end_day = '2020-05-04',
     pop_infected = pop_infected,
@@ -51,7 +53,6 @@ pars = dict(
     beta = beta,
     location = 'nigeria',
     pop_type = 'hybrid',
-
     )
 
 # Create sim and run
@@ -76,6 +77,9 @@ to_plot = sc.objdict({
     'Infections and number infectious': ['cum_infections', 'n_infectious'],
     'New infections per day': ['new_infections'],
     })
-sim.plot(to_plot=to_plot, do_save=False, do_show=True, legend_args={'loc': 'upper left'})
-sim.save('nigeria.sim')
+sim.plot(to_plot=to_plot, do_save=False, do_show=True, legend_args={'loc': 'upper left'}, axis_args={'hspace':0.4})
+
+if do_save:
+    pl.savefig('nigeria_calibration_may03.png', dpi=150)
+    sim.save('nigeria.sim')
 
