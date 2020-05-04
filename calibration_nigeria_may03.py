@@ -21,21 +21,17 @@ do_save = True
 
 rel_crit_prob = 5.0
 diag_factor = 0.8
-which = ['default', 'calibrated'][1]
-if which == 'default':
-    pop_size = 400e3
-    pop_scale = 10.0
-    pop_infected = 20
-    symp_prob = 0.0015
-    beta_change = 1.0
-    beta = 0.015
-elif which == 'calibrated':
-    pop_size = 200e3
-    pop_scale = 5.0
-    pop_infected = 40
-    symp_prob = 0.004
+pop_size = 200e3
+pop_scale = 5.0
+pop_infected = 40
+symp_prob = 0.004
+beta = 0.0125
+which = ['lockdown', 'nolockdown'][1]
+if which == 'lockdown':
     beta_change = 0.5
-    beta = 0.0125
+elif which == 'nolockdown':
+    beta_change = 1.0
+
 
 # Other parameters
 pars = dict(
@@ -80,6 +76,6 @@ to_plot = sc.objdict({
 sim.plot(to_plot=to_plot, do_save=False, do_show=True, legend_args={'loc': 'upper left'}, axis_args={'hspace':0.4})
 
 if do_save:
-    pl.savefig('nigeria_calibration_may03.png', dpi=150)
-    sim.save('nigeria_may03.sim')
+    pl.savefig(f'nigeria_calibration_{which}_may03.png', dpi=150)
+    sim.save(f'nigeria_{which}_may03.sim')
 
