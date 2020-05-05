@@ -48,11 +48,11 @@ pars = dict(
     end_day = '2020-05-31',
     pop_infected = pop_infected,
     interventions = [
-        cv.test_prob(symp_prob=symp_prob, asymp_prob=0, start_day=0, do_plot=False),
-        cv.change_beta(days=['2020-03-29'], changes=[h_beta_change], layers=['h'], do_plot=h_beta_change<1.0),
-        cv.change_beta(days=['2020-03-29'], changes=[s_beta_change], layers=['s'], do_plot=s_beta_change<1.0),
-        cv.change_beta(days=['2020-03-29'], changes=[w_beta_change], layers=['w'], do_plot=w_beta_change<1.0),
-        cv.change_beta(days=['2020-03-29'], changes=[c_beta_change], layers=['c'], do_plot=c_beta_change<1.0),
+        cv.test_prob(symp_prob=symp_prob, asymp_prob=0, start_day=0, end_day='2020-05-04', do_plot=False),
+        cv.change_beta(days=['2020-03-29', '2020-05-04'], changes=[h_beta_change, 1.0], layers=['h'], do_plot=h_beta_change<1.0), # Households return to normal after lockdown
+        cv.change_beta(days=['2020-03-29'], changes=[s_beta_change, ], layers=['s'], do_plot=s_beta_change<1.0), # Schools remain shut
+        cv.change_beta(days=['2020-03-29', '2020-05-04'], changes=[w_beta_change, 1.0], layers=['w'], do_plot=w_beta_change<1.0), # Workplaces return to normal
+        cv.change_beta(days=['2020-03-29', '2020-05-04'], changes=[c_beta_change, 0.95], layers=['c'], do_plot=c_beta_change<1.0), # Community remains subdued (reflecting curfews)
         ],
     rand_seed = 1,
     beta = beta,

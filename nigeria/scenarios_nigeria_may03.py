@@ -106,19 +106,10 @@ class screen(cv.Intervention):
 
 def lift_lockdown_paper_screening_scens():
 
-    sim = sc.loadobj('/Users/robynstuart/Documents/git/covid_apps/nigeria/nigeria_lockdown_may03.sim')
-    end_day = '2020-05-31'
-    sim.update_pars(pars={'end_day':end_day})
+    sim = sc.loadobj('/Users/robynstuart/Documents/git/covid_apps/nigeria/nigeria_lockdown_may03_long.sim')
 
     n_adults = sim['pop_size']/2
     pop_scale = sim['pop_scale']
-    start_day = sim['start_day']
-    pop_infected = sim['pop_infected']
-    n_days = sim['n_days']
-    rand_seed = sim['rand_seed']
-    beta = sim['beta']
-    location = 'nigeria'
-    pop_type = 'hybrid'
 
     test_kwargs = {'symp_test': 0.0, 'quar_test': 100.0, 'sensitivity': 1.0, 'test_delay': 0, 'loss_prob': 0}
     tn = 2000
@@ -130,7 +121,6 @@ def lift_lockdown_paper_screening_scens():
        f'screen{sc}_eff{ef}': {
             'name': f'Screen {sc} with {ef} efficacy',
             'pars': {
-                'end_day': '2020-05-31',
                 'interventions': [
                     # new post-lockdown interventions
                     screen(daily_screens=np.array([sc]*180) / pop_scale,
@@ -150,7 +140,6 @@ def lift_lockdown_paper_screening_scens():
        f'noscreen': {
             'name': f'No screening',
             'pars': {
-                'end_day': '2020-05-31',
                 'interventions': [
                     # new post-lockdown interventions
                     quarantine_severe(start_day='2020-05-04'),
@@ -188,5 +177,4 @@ to_plot = [
 ]
 fig_args = dict(figsize=(28, 20))
 
-scens.plot(do_save=1, do_show=0, to_plot=to_plot, fig_path='nigeria_scenarios_paper_may05', n_cols=2,
-           fig_args=fig_args)
+scens.plot(do_save=1, do_show=0, to_plot=to_plot, fig_path='nigeria_scenarios_paper_may05.png', n_cols=2, fig_args=fig_args)
