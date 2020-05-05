@@ -20,7 +20,6 @@ do_save = True
 # Calibration parameters -- "default" uses default sim values, "calibrated" uses Nigeria-specific ones
 
 rel_crit_prob = 5.0
-diag_factor = 0.8
 pop_size = 200e3
 pop_scale = 5.0
 pop_infected = 40

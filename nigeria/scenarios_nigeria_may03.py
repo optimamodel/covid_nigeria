@@ -110,7 +110,7 @@ class screen(cv.Intervention):
 
 def lift_lockdown_paper_screening_scens():
 
-    sim = sc.loadobj('/Users/robynstuart/Documents/git/covid_apps/nigeria/nigeria_lockdown_may03_long.sim')
+    sim = sc.loadobj('/Users/robynstuart/Documents/git/covid_apps/nigeria/nigeria_lockdown_long.sim')
 
     n_adults = sim['pop_size']/2
     pop_scale = sim['pop_scale']
@@ -170,7 +170,7 @@ def lift_lockdown_paper_screening_scens():
 
 
 df, scens = lift_lockdown_paper_screening_scens()
-#scens.save('nigeria.scens') # Save for analysis script
+scens.save('nigeria.scens') # Save for analysis script
 
 
 to_plot = [
