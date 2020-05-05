@@ -3,6 +3,8 @@ Simulate COVID-19 in Nigeria
 '''
 
 #%% Imports and settings
+import matplotlib
+matplotlib.use('Agg')
 import sciris as sc
 import covasim as cv
 import numpy as np
@@ -17,9 +19,11 @@ verbose = 1
 
 class quarantine_severe(cv.Intervention):
     '''Quarantine people with severe symptoms'''
-    def __init__(self, start_day=0, end_day=None):
+    def __init__(self, start_day=0, end_day=None, do_plot=None):
+        super().__init__(do_plot=do_plot)
         self.start_day   = start_day
         self.end_day     = end_day
+        #self.do_plot     = do_plot
         self._store_args()
         self.initialized     = False
 
@@ -117,6 +121,9 @@ def lift_lockdown_paper_screening_scens():
     number_screened = [int(n_adults*x/10) for x in range(1,6,1)] # Number that could be screened - 10-50% of the population
     efficacy = [x/10 for x in range(1,6,1)]
 
+    number_screened = [int(n_adults*.5)]
+    efficacy = [0.5]
+
     scenarios = {
        f'screen{sc}_eff{ef}': {
             'name': f'Screen {sc} with {ef} efficacy',
@@ -155,14 +162,14 @@ def lift_lockdown_paper_screening_scens():
     metapars = {'n_runs': 1}
     allscenarios = sc.mergedicts(baseline, scenarios)
     scens = cv.Scenarios(sim=sim, scenarios=allscenarios, metapars=metapars)
-    df = scens.run(verbose=verbose, debug=False)
+    df = scens.run(verbose=verbose, debug=True)
 
     return df, scens
 
 
 
 df, scens = lift_lockdown_paper_screening_scens()
-scens.save('nigeria.scens') # Save for analysis script
+#scens.save('nigeria.scens') # Save for analysis script
 
 
 to_plot = [
@@ -177,4 +184,4 @@ to_plot = [
 ]
 fig_args = dict(figsize=(28, 20))
 
-scens.plot(do_save=1, do_show=0, to_plot=to_plot, fig_path='nigeria_scenarios_paper_may05.png', n_cols=2, fig_args=fig_args)
+scens.plot(do_save=1, do_show=0) #, to_plot=to_plot, fig_path='nigeria_scenarios_paper_may05.png', n_cols=2, fig_args=fig_args)
