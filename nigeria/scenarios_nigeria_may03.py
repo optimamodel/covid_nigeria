@@ -121,7 +121,7 @@ def lift_lockdown_paper_screening_scens():
     number_screened = [int(n_adults*x/10) for x in range(1,6,1)] # Number that could be screened - 10-50% of the population
     efficacy = [x/10 for x in range(1,6,1)]
 
-    # to just run one... 
+    # to just run one...
     #number_screened = [int(n_adults*.5)]
     #efficacy = [0.5]
 
