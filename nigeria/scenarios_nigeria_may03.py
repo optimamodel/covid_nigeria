@@ -3,6 +3,8 @@ Simulate COVID-19 in Nigeria
 '''
 
 #%% Imports and settings
+import matplotlib
+matplotlib.use('Agg')
 import sciris as sc
 import covasim as cv
 import numpy as np
@@ -17,10 +19,13 @@ verbose = 1
 
 class quarantine_severe(cv.Intervention):
     '''Quarantine people with severe symptoms'''
-    def __init__(self, start_day=0, end_day=None):
+    def __init__(self, start_day=0, end_day=None, do_plot=None):
+        super().__init__(do_plot=do_plot)
         self.start_day   = start_day
         self.end_day     = end_day
+        #self.do_plot     = do_plot
         self._store_args()
+        self.initialized     = False
 
         return
 
@@ -29,6 +34,7 @@ class quarantine_severe(cv.Intervention):
         self.start_day = sim.day(self.start_day)
         self.end_day   = sim.day(self.end_day)
         self.days      = [self.start_day, self.end_day]
+        self.initialized = True
         return
 
     def apply(self, sim):
@@ -60,6 +66,7 @@ class screen(cv.Intervention):
         self.start_day   = start_day
         self.end_day     = end_day
         self._store_args()
+        self.initialized     = False
         self.screen_quarantined = 0
 
         return
@@ -69,6 +76,7 @@ class screen(cv.Intervention):
         self.start_day = sim.day(self.start_day)
         self.end_day   = sim.day(self.end_day)
         self.days      = [self.start_day, self.end_day]
+        self.initialized = True
         return
 
     def apply(self, sim):
@@ -95,48 +103,36 @@ class screen(cv.Intervention):
         sim.people.quarantine(final_inds)
         sim.results['new_quarantined'][t] += len(final_inds)
 
-        print(f'{final_inds} put into quarantine by screening.')
+        #print(f'{final_inds} put into quarantine by screening.')
 
         return
 
 
-def lift_lockdown_paper_screening_beta():
+def lift_lockdown_paper_screening_scens():
 
-    sim = sc.loadobj('/Users/robynstuart/Documents/git/covid_apps/nigeria.sim')
+    sim = sc.loadobj('/Users/robynstuart/Documents/git/covid_apps/nigeria/nigeria_lockdown_long.sim')
 
-    adults = sim['pop_size']/2
+    n_adults = sim['pop_size']/2
     pop_scale = sim['pop_scale']
-    start_day = sim['start_day']
-    pop_infected = sim['pop_infected']
-    n_days = sim['n_days']
-    rand_seed = sim['rand_seed']
-    beta = sim['beta']
-    location = 'nigeria'
-    pop_type = 'hybrid'
 
-    test_kwargs = {'sympt_test': 0.0, 'quar_test': 100.0, 'sensitivity': 1.0, 'test_delay': 0, 'loss_prob': 0}
+    test_kwargs = {'symp_test': 0.0, 'quar_test': 100.0, 'sensitivity': 1.0, 'test_delay': 0, 'loss_prob': 0}
     tn = 2000
 
+    number_screened = [int(n_adults*x/10) for x in range(1,6,1)] # Number that could be screened - 10-50% of the population
+    efficacy = [x/10 for x in range(1,6,1)]
+
+    # to just run one...
+    #number_screened = [int(n_adults*.5)]
+    #efficacy = [0.5]
+
     scenarios = {
-        f'noscreen': {
-            'name': f'No symptom screening',
+       f'screen{sc}_eff{ef}': {
+            'name': f'Screen {sc} with {ef} efficacy',
             'pars': {
                 'interventions': [
                     # new post-lockdown interventions
-                    quarantine_severe(start_day='2020-05-04'),
-                    cv.test_num(daily_tests=np.array([tn] * 180) / pop_scale, start_day='2020-05-04',
-                                end_day='2020-09-30', **test_kwargs),
-                    cv.contact_tracing(start_day='2020-05-04', end_day='2020-09-30',
-                                       trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
-                                       trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7})]
-            }
-        },
-       f'screen': {
-            'name': f'Symptom screening',
-            'pars': {
-                'interventions': [
-                    # new post-lockdown interventions
-                    screen(daily_screens=np.array([adults]*180) / pop_scale,
+                    screen(daily_screens=np.array([sc]*180) / pop_scale,
+                           sensitivity=ef,
                            start_day='2020-05-04'),
                     quarantine_severe(start_day='2020-05-04'),
                     cv.test_num(daily_tests=np.array([tn] * 180) / pop_scale, start_day='2020-05-04',
@@ -145,32 +141,48 @@ def lift_lockdown_paper_screening_beta():
                                        trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
                                        trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7})]
             }
-        },
+        } for sc in number_screened for ef in efficacy
+    }
+
+    baseline = {
+       f'noscreen': {
+            'name': f'No screening',
+            'pars': {
+                'interventions': [
+                    # new post-lockdown interventions
+                    quarantine_severe(start_day='2020-05-04'),
+                    cv.test_num(daily_tests=np.array([tn] * 180) / pop_scale, start_day='2020-05-04',
+                                end_day='2020-09-30', **test_kwargs),
+                    cv.contact_tracing(start_day='2020-05-04', end_day='2020-09-30',
+                                       trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
+                                       trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7})]
+            }
+        }
     }
 
     metapars = {'n_runs': 1}
-    sim = sc.loadobj('/Users/robynstuart/Documents/git/covid_apps/nigeria.sim')
-    scens = cv.Scenarios(sim=sim, scenarios=scenarios, metapars=metapars)
-    df = scens.run(verbose=verbose, debug=False)
+    allscenarios = sc.mergedicts(baseline, scenarios)
+    scens = cv.Scenarios(sim=sim, scenarios=allscenarios, metapars=metapars)
+    df = scens.run(verbose=verbose, debug=True)
 
     return df, scens
 
 
 
-df, scens = lift_lockdown_paper_screening_beta()
+df, scens = lift_lockdown_paper_screening_scens()
+scens.save('nigeria.scens') # Save for analysis script
+
+
 to_plot = [
     'cum_infections',
     'new_infections',
     'cum_symptomatic',
     'cum_severe',
     'cum_critical',
-     'cum_deaths',
-        'cum_diagnoses',
-        'cum_quarantined',
+    'cum_deaths',
+    'cum_diagnoses',
+    'cum_quarantined',
 ]
 fig_args = dict(figsize=(28, 20))
 
-scens.plot(do_save=1, do_show=0, to_plot=to_plot, fig_path=f'results/nigeria_scenarios_paper_new', n_cols=2,
-           fig_args=fig_args)
-scens.save('nigeria.scens')
-
+scens.plot(do_save=1, do_show=0) #, to_plot=to_plot, fig_path='nigeria_scenarios_paper_may05.png', n_cols=2, fig_args=fig_args)

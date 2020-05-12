@@ -14,43 +14,15 @@ import covasim.utils as cvu
 seed = 1
 verbose = 1
 
-def make_sim(beta=None):
-
-    if beta is None: beta = 0.015
-     # Define parameters
-    pars = {'pop_size': 200e3,
-            'pop_type': 'hybrid',
-            'location': 'nigeria', # Load age structure and household sizes
-            'start_day':'2020-04-01',
-            'n_days': 62,
-            'pop_scale': 100,
-            'pop_infected': 10,
-            'beta': beta,
-            'rand_seed': 1,
-            'n_beds': 1e-6,
-            'OR_no_treat': 100.0,
-            'rel_symp_prob': 1.2,
-            'rel_severe_prob': 4.5,
-            'rel_crit_prob': 5., #
-            'rel_death_prob': 1.0,
-            'asymp_factor': 0.5, # Ferguson
-            'quar_eff': {'h': 1, 's': 0.5, 'w': 0.0, 'c': 0.1},
-            'quar_period': 14
-     }
-
-    sim = cv.Sim(pars=pars)
-
-    sim['contacts']['s'] = 0 # No school
-    sim['contacts']['c'] = 5  # Reduced community
-
-    return sim
 
 class quarantine_severe(cv.Intervention):
     '''Quarantine people with severe symptoms'''
-    def __init__(self, start_day=0, end_day=None):
+    def __init__(self, start_day=0, end_day=None, do_plot=None):
+        super().__init__(do_plot=do_plot)
         self.start_day   = start_day
         self.end_day     = end_day
         self._store_args()
+        self.initialized     = False
 
         return
 
@@ -59,6 +31,7 @@ class quarantine_severe(cv.Intervention):
         self.start_day = sim.day(self.start_day)
         self.end_day   = sim.day(self.end_day)
         self.days      = [self.start_day, self.end_day]
+        self.initialized = True
         return
 
     def apply(self, sim):
@@ -90,6 +63,7 @@ class screen(cv.Intervention):
         self.start_day   = start_day
         self.end_day     = end_day
         self._store_args()
+        self.initialized     = False
         self.screen_quarantined = 0
 
         return
@@ -99,6 +73,7 @@ class screen(cv.Intervention):
         self.start_day = sim.day(self.start_day)
         self.end_day   = sim.day(self.end_day)
         self.days      = [self.start_day, self.end_day]
+        self.initialized = True
         return
 
     def apply(self, sim):
@@ -132,21 +107,26 @@ class screen(cv.Intervention):
 
 def lift_lockdown_paper_screening_beta():
 
-    pop_scale = 100
-    test_kwargs = {'sympt_test': 0.0, 'quar_test': 100.0, 'sensitivity': 1.0, 'test_delay': 0, 'loss_prob': 0}
-    tn = 2000
+    sim = sc.loadobj('/Users/robynstuart/Documents/git/covid_apps/nigeria/nigeria.sim')
 
-    pre_lockdown_interventions = [cv.clip_edges(start_day='2020-04-01', end_day='2020-05-04', change={'w': 0.3}), # Reduce work by 70% til May 4
-                                  cv.test_num(daily_tests=np.array([200]*180) / pop_scale, start_day='2020-04-01', end_day='2020-05-04', **test_kwargs),
-                                  cv.contact_tracing(start_day='2020-04-01', end_day='2020-05-04',
-                                                     trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.1},
-                                                     trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7})]
+    adults = sim['pop_size']/2
+    pop_scale = sim['pop_scale']
+    start_day = sim['start_day']
+    pop_infected = sim['pop_infected']
+    n_days = sim['n_days']
+    rand_seed = sim['rand_seed']
+    beta = sim['beta']
+    location = 'nigeria'
+    pop_type = 'hybrid'
+
+    test_kwargs = {'symp_test': 0.0, 'quar_test': 100.0, 'sensitivity': 1.0, 'test_delay': 0, 'loss_prob': 0}
+    tn = 2000
 
     scenarios = {
         f'noscreen': {
             'name': f'No symptom screening',
             'pars': {
-                'interventions': pre_lockdown_interventions + [
+                'interventions': [
                     # new post-lockdown interventions
                     quarantine_severe(start_day='2020-05-04'),
                     cv.test_num(daily_tests=np.array([tn] * 180) / pop_scale, start_day='2020-05-04',
@@ -159,9 +139,9 @@ def lift_lockdown_paper_screening_beta():
        f'screen': {
             'name': f'Symptom screening',
             'pars': {
-                'interventions': pre_lockdown_interventions + [
+                'interventions': [
                     # new post-lockdown interventions
-                    screen(daily_screens=np.array([5e6]*180) / pop_scale,
+                    screen(daily_screens=np.array([adults]*180) / pop_scale,
                            start_day='2020-05-04'),
                     quarantine_severe(start_day='2020-05-04'),
                     cv.test_num(daily_tests=np.array([tn] * 180) / pop_scale, start_day='2020-05-04',
@@ -174,32 +154,27 @@ def lift_lockdown_paper_screening_beta():
     }
 
     metapars = {'n_runs': 1}
-    to_plot = [
-        'cum_infections',
-        'new_infections',
-        'cum_symptomatic',
-        'cum_severe',
-        'cum_critical',
-        'cum_deaths',
-        #    'cum_diagnoses',
-        #    'cum_quarantined',
-    ]
-    fig_args = dict(figsize=(28, 20))
+    #sim = sc.loadobj('/Users/robynstuart/Documents/git/covid_apps/nigeria/nigeria.sim')
+    scens = cv.Scenarios(sim=sim, scenarios=scenarios, metapars=metapars)
+    df = scens.run(verbose=verbose, debug=True)
 
-    difference = {k:np.zeros((63,10)) for k in to_plot}
-    beta_vals = np.random.normal(0.015, 0.001, 10)
-
-    for bi,beta in enumerate(beta_vals):
-        sim = make_sim(beta=beta)
-        scens = cv.Scenarios(sim=sim, scenarios=scenarios, metapars=metapars)
-        df = scens.run(verbose=verbose, debug=False)
-        #scens.plot(do_save=1, do_show=0, to_plot=to_plot, fig_path=f'results/nigeria_scenarios_paper_{name}', n_cols=2, fig_args=fig_args)
-
-        for rk in to_plot:
-            difference[rk][:,bi] = scens.results[rk]['noscreen']['best'] - scens.results[rk]['screen']['best']
-
-    return difference, scens
+    return df, scens
 
 
 
-difference, scens = lift_lockdown_paper_screening_beta()
+df, scens = lift_lockdown_paper_screening_beta()
+to_plot = [
+    'cum_infections',
+    'new_infections',
+    'cum_symptomatic',
+    'cum_severe',
+    'cum_critical',
+     'cum_deaths',
+        'cum_diagnoses',
+        'cum_quarantined',
+]
+fig_args = dict(figsize=(28, 20))
+
+scens.plot(do_save=1, do_show=0)
+scens.save('nigeria.scens')
+
