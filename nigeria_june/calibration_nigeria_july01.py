@@ -9,8 +9,8 @@ import optuna as op
 def create_sim(x):
 
     beta = x[0]
-    beta_change = x[1]
-    rel_crit_prob = x[2]
+    #beta_change = x[1]
+    rel_crit_prob = x[1]
     #symp_prob = x[2]
     symp_prob_prelockdown = x[2]
     symp_prob_lockdown = x[3]
@@ -49,8 +49,8 @@ def create_sim(x):
         #cv.test_prob(symp_prob=symp_prob,  asymp_prob=0, start_day=0, do_plot=False),
         cv.contact_tracing(start_day=start_day, trace_probs={'h': 1, 's': 0, 'w': 0.8, 'c': 0.0}, trace_time={'h': 1, 's': 7, 'w': 7, 'c': 7}, do_plot=False),
         cv.change_beta(days=[lockdown_start], changes=[0], layers='s', do_plot=False),
-        cv.change_beta(days=[lockdown_start, lockdown_end], changes=[beta_change, 0.8], layers='w', do_plot=False),
-        cv.change_beta(days=[lockdown_start, lockdown_end], changes=[beta_change, 0.8], layers='c', do_plot=False),
+        cv.change_beta(days=[lockdown_start, lockdown_end], changes=[0.5, 0.8], layers='w', do_plot=False),
+        cv.change_beta(days=[lockdown_start, lockdown_end], changes=[0.5, 0.8], layers='c', do_plot=False),
     ]
 
     # Create the baseline simulation
@@ -84,6 +84,7 @@ def get_bounds():
         beta         = dict(best=0.012, lb=0.008, ub=0.015),
         #beta_change = dict(best=0.5,  lb=0.3,   ub=0.7),
         #symp_prob = dict(best=0.01,  lb=0.005,   ub=0.015),
+        rel_crit_prob = dict(best=1.1,  lb=1.,   ub=1.6),
         symp_prob_prelockdown = dict(best=0.01,  lb=0.000,   ub=0.03),
         symp_prob_lockdown = dict(best=0.02,  lb=0.005,   ub=0.1),
         symp_prob_postlockdown = dict(best=0.04,  lb=0.005,   ub=0.15),
@@ -102,7 +103,7 @@ def get_bounds():
 name      = 'covasim_nigeria_calibration'
 storage   = f'sqlite:///{name}.db'
 n_trials  = 100
-n_workers = 4
+n_workers = 8
 
 pars, pkeys = get_bounds() # Get parameter guesses
 
