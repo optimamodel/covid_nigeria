@@ -203,8 +203,9 @@ if __name__ == '__main__':
 
     # Plot result
     print('Plotting result...')
+    sim = create_sim([pars_calib['beta'], pars_calib['rel_crit_prob'], pars_calib['symp_prob_prelockdown'], pars_calib['symp_prob_lockdown'], pars_calib['symp_prob_postlockdown']])
     #sim = create_sim([pars_calib['beta'], pars_calib['beta_change'], pars_calib['symp_prob_prelockdown'], pars_calib['symp_prob_lockdown'], pars_calib['symp_prob_postlockdown']])
-    sim = create_sim([pars_calib['beta'], pars_calib['beta_change'], pars_calib['symp_prob']])
+    #sim = create_sim([pars_calib['beta'], pars_calib['beta_change'], pars_calib['symp_prob']])
     sim.run()
     sim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path=f'nigeria_calibration_optuna.png')
     pl.gcf().axes[0].set_title('Calibrated parameter values')
