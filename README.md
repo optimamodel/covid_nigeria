@@ -1,2 +1,2 @@
-# covid_apps
-Applications for COVID-19 projects
+# covid_nigeria
+Modelling the COVID-19 epidemic in Lagos, Nigeria
